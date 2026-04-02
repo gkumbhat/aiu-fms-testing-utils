@@ -37,7 +37,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument(
     "--device_type",
     type=str,
-    choices=["cuda", "cpu", "aiu", "aiu-senulator"],
+    choices=["cuda", "cpu", "aiu", "aiu-senulator", "spyre"],
     default="cuda",
     help="The device to run the model on",
 )
@@ -273,6 +273,8 @@ attention_map = {
 }
 
 attn_name = attention_map[args.attention_type]
+
+torch._dynamo.config.recompile_limit = 1000
 
 if "paged" in attn_name:
     from aiu_fms_testing_utils.utils.paged import generate
@@ -523,6 +525,14 @@ with stagger_region(args.stagger_load):
         linear_config=linear_config,
         fused_weights=fused_weights,
     )
+
+# Pad vocab_size to multiple of 64
+remainder = ((model.head.weight.shape[0] + 64 - 1) // 64 * 64) - model.head.weight.shape[0]
+print(remainder)
+model.head.weight = torch.nn.Parameter(torch.cat([
+    model.head.weight.to("cpu"),
+    torch.zeros((remainder, 4096), dtype=torch.float16, device="cpu")
+]).to("spyre"))
 
 ### Quantization
 
