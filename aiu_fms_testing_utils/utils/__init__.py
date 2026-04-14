@@ -55,6 +55,7 @@ def warmup_model(
     use_cache: bool = True,
     stagger_update_lazyhandle: int = 0,
     prefill_chunk_size: int = 0,
+    prepare_model_inputs_hook=None,  # Added for multimodal support
     **extra_kwargs,
 ):
     import torch_sendnn
@@ -100,6 +101,7 @@ def warmup_model(
                 do_sample=False,
                 use_cache=use_cache,
                 extra_kwargs=extra_kwargs,
+                prepare_model_inputs_hook=prepare_model_inputs_hook,  # Pass the hook
                 **attention_specific_kwargs,
             )
     pt_compile_model_time = time.time() - pt_compile_model_time
